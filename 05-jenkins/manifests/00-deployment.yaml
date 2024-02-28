@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      securityContext:
+        fsGroup: 1000 # Jenkins group (1000) read/write access to volumes.
+
+      initContainers:
+      - name: volume-mount-hack
+        image: busybox
+        command: 
+          - sh
+          - "-c"
+          - |
+            cp -r /var/jenkins_home_temp/* /var/jenkins_home/
+            chown -R 1000:1000 /var/jenkins_home
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+        - name: jenkins-credentials
+          mountPath: /var/jenkins_home_temp/exported-credentials.xml
+          subPath: exported-credentials.xml
+        - name: jenkins-job-stage
+          mountPath: /var/jenkins_home_temp/jobs/diploma-test-app-stage/config.xml
+          subPath: config.xml
+        - name: jenkins-job-prod
+          mountPath: /var/jenkins_home_temp/jobs/diploma-test-app-prod/config.xml
+          subPath: config.xml
+
+      containers:
+
+      - name: jenkins
+        image: pasqueque/pasqueque-repo:jenkins-plugins
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: jenkins-home
+          mountPath: /var/jenkins_home
+        - name: kubeconfig
+          mountPath: /root/.kube/config
+          subPath: config
+
+        env:
+        - name: JAVA_OPTS
+          value: "-Djenkins.install.runSetupWizard=false"
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+
+      - name: dind
+        image: "docker:dind"
+        imagePullPolicy: Always
+        command: ["dockerd", "--host", "tcp://127.0.0.1:2375"]
+        securityContext:
+          privileged: true
+        volumeMounts:
+          - name: launcher-storage
+            mountPath: /var/lib/docker
+            subPath: docker
+
+      volumes:
+      - name: jenkins-home
+        emptyDir: { }
+      - name: launcher-storage
+        emptyDir: {}
+      - name: jenkins-credentials
+        configMap:
+          name: jenkins-files
+          items:
+          - key: credentials
+            path: exported-credentials.xml
+      - name: jenkins-job-stage
+        configMap:
+          name: jenkins-files
+          items:
+          - key: diploma-test-app-stage
+            path: config.xml
+      - name: jenkins-job-prod
+        configMap:
+          name: jenkins-files
+          items:
+          - key: diploma-test-app-prod
+            path: config.xml
+      - name: kubeconfig
+        configMap:
+          name: jenkins-files
+          items:
+          - key: kubeconfig
+            path: config

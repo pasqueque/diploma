@@ -1,0 +1,8 @@
+#cloud-config
+users:
+  - name: cadm
+    groups: sudo
+    shell: /bin/bash
+    sudo: 'ALL=(ALL) NOPASSWD:ALL'
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAYPqp4TMhxj3biHVIXphtWG89sg3I74EbOs09BS0Kta pasqueque@pasqueque-comp

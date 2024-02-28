@@ -1,0 +1,19 @@
+services:
+  jenkins:
+    # image: runout/jenkins-with-plugins:latest
+    image: jenkins/jenkins:2.440.1-jdk17
+    # user: root
+    # group_add:
+    #   - 1001
+    privileged: true
+    ports:
+      - 8090:8080
+    environment:
+      # - JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
+      - A=B
+    volumes:
+      - ./data:/var/jenkins_home
+      - ../infra_iac/kubeconfig/config-prod:/root/.kube/config
+      - ./jobs:/var/jenkins_home/jobs
+      - ./exported-credentials.xml:/var/jenkins_home/exported-credentials.xml
+      - /var/run/docker.sock:/var/run/docker.sock
