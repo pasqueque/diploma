@@ -50,4 +50,4 @@ key.json
 ansible/*
 
 # Конфигурационные файлы для доступа к кластерам Кубернетес
-kubeconfig/*
+**/kubeconfig/*
